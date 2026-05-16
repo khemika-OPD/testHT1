@@ -6,7 +6,6 @@
     <title>Takhli HT Smart Care</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
@@ -48,19 +47,10 @@
                 <i id="medToggleIcon" class="fa-solid fa-chevron-down text-[10px]"></i>
             </button>
             <div id="medListArea" class="hidden space-y-3">
-                <div class="flex gap-2">
-                    <button onclick="addMedManual()" class="flex-1 bg-teal-500/10 text-teal-400 py-2 rounded-xl text-[10px] border border-teal-500/30 font-bold">+ เพิ่มยา</button>
-                    <button onclick="document.getElementById('cameraInput').click()" class="flex-1 btn-gradient text-white py-2 rounded-xl text-[10px] font-bold">สแกนซองยา</button>
-                    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="processImage(this)">
-                </div>
-                <div id="ocrStatus" class="hidden text-center py-4 bg-slate-800/50 rounded-2xl border border-teal-500/20">
-                    <div id="confirmZone" class="space-y-3 p-3 text-left">
-                        <p class="text-[10px] text-slate-400">ชื่อยาที่อ่านได้ (แก้ไขได้):</p>
-                        <input type="text" id="tempMedName" class="input-comorbidity text-center font-bold text-sm">
-                        <button onclick="confirmMed()" class="w-full btn-gradient py-2 rounded-xl text-xs font-bold">ยืนยันลงรายการ</button>
-                    </div>
-                </div>
-                <div id="medDisplayArea" class="space-y-2"></div>
+                <button onclick="addMedManual()" class="w-full btn-gradient text-white py-3 rounded-xl text-xs font-bold shadow-md">
+                    <i class="fa-solid fa-plus mr-1"></i> คลิกเพื่อพิมพ์เพิ่มรายการยาความดัน
+                </button>
+                <div id="medDisplayArea" class="space-y-2 mt-2"></div>
             </div>
         </div>
 
@@ -86,24 +76,26 @@
                 <i id="bpResultIcon" class="fa-solid fa-chevron-down transition-transform duration-300"></i>
             </button>
             <div id="bpResultSection" class="hidden space-y-5 pt-2 text-center">
+                
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-teal-500/10 shadow-inner">
-                        <p class="text-[9px] text-slate-400 uppercase font-bold">เฉลี่ยเช้า (7 วัน)</p>
-                        <p id="avgM" class="text-lg font-bold text-teal-400">--/--</p>
+                    <div class="bg-slate-800/90 p-4 rounded-2xl text-center border border-teal-500/20 shadow-xl">
+                        <p class="text-[11px] text-teal-300 uppercase font-bold tracking-wider mb-1">🌤️ เฉลี่ยเช้า (7 วัน)</p>
+                        <p id="avgM" class="text-3xl font-extrabold text-green-400 font-mono tracking-tight">--/--</p>
                     </div>
-                    <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-yellow-500/10 shadow-inner">
-                        <p class="text-[9px] text-slate-400 uppercase font-bold">เฉลี่ยเย็น (7 วัน)</p>
-                        <p id="avgE" class="text-lg font-bold text-yellow-400">--/--</p>
+                    <div class="bg-slate-800/90 p-4 rounded-2xl text-center border border-yellow-500/20 shadow-xl">
+                        <p class="text-[11px] text-yellow-300 uppercase font-bold tracking-wider mb-1">🌙 เฉลี่ยเย็น (7 วัน)</p>
+                        <p id="avgE" class="text-3xl font-extrabold text-yellow-400 font-mono tracking-tight">--/--</p>
                     </div>
                 </div>
+
                 <div class="flex gap-2 p-1 bg-slate-900/80 rounded-2xl">
-                    <button onclick="setPeriod('morning')" id="btnM" class="flex-1 py-2 rounded-xl bg-teal-600 text-white text-[10px] font-bold">เช้า</button>
-                    <button onclick="setPeriod('evening')" id="btnE" class="flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold">เย็น</button>
-                    <button onclick="setPeriod('hospital')" id="btnH" class="flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold">รพ.</button>
+                    <button onclick="setPeriod('morning')" id="btnM" class="flex-1 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-bold transition-all">เช้า</button>
+                    <button onclick="setPeriod('evening')" id="btnE" class="flex-1 py-2.5 rounded-xl text-slate-400 text-xs font-bold transition-all">เย็น</button>
+                    <button onclick="setPeriod('hospital')" id="btnH" class="flex-1 py-2.5 rounded-xl text-slate-400 text-xs font-bold transition-all">รพ.</button>
                 </div>
                 <div class="flex gap-3">
-                    <input type="number" id="sysIn" placeholder="ตัวบน (SYS)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-xl font-bold text-white outline-none focus:border-teal-400">
-                    <input type="number" id="diaIn" placeholder="ตัวล่าง (DIA)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-xl font-bold text-white outline-none focus:border-teal-400">
+                    <input type="number" id="sysIn" placeholder="ตัวบน (SYS)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-2xl font-bold text-white outline-none focus:border-teal-400">
+                    <input type="number" id="diaIn" placeholder="ตัวล่าง (DIA)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-2xl font-bold text-white outline-none focus:border-teal-400">
                 </div>
                 
                 <div id="evalArea" class="hidden p-4 rounded-2xl border text-left space-y-2 transition-all">
@@ -127,9 +119,6 @@
                     </div>
                     <input type="date" id="nextAppointDate" onchange="saveAppointment()" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-teal-400 outline-none focus:border-amber-500 transition">
                 </div>
-                <p class="text-[10px] text-slate-400 px-1 leading-relaxed">
-                    *กรุณาเลือกวันนัดหมายตามใบนัดของโรงพยาบาลตาคลี แอปพลิเคชันจะช่วยคำนวณวันนัดถอยหลังให้โดยอัตโนมัติค่ะ
-                </p>
             </div>
         </div>
 
@@ -138,8 +127,7 @@
                 <span><i class="fa-solid fa-list-check mr-1"></i> ผลความดันทั้งหมด</span>
                 <i id="historyToggleIcon" class="fa-solid fa-chevron-down text-[10px]"></i>
             </button>
-            <div id="historyArea" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1">
-                </div>
+            <div id="historyArea" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
         </div>
 
         <div class="text-center">
@@ -179,7 +167,6 @@
                 document.getElementById('nextAppointDate').value = db.info.app_date;
                 calculateCountdown(db.info.app_date);
             }
-            
             renderMeds();
             renderHistory();
             updateUI();
@@ -227,40 +214,8 @@
             if (sectionId === 'graphSection' && !isHidden) setTimeout(renderChart, 100);
         }
 
-        // ระบบสแกนยาเวอร์ชันอัปเกรดเพื่อความแม่นยำภาษาไทยและอังกฤษร่วมกัน
-        async function processImage(input) {
-            if (!input.files || !input.files[0]) return;
-            const status = document.getElementById('ocrStatus');
-            const tempInput = document.getElementById('tempMedName');
-            
-            status.classList.remove('hidden');
-            tempInput.value = "⏳ กำลังอ่านตัวอักษรภาษาไทยและอังกฤษ...";
-            
-            try {
-                const result = await Tesseract.recognize(input.files[0], 'tha+eng');
-                let detectedText = result.data.text;
-                let lines = detectedText.split('\n').map(line => line.trim()).filter(line => line.length > 2);
-                
-                if (lines.length > 0) {
-                    tempInput.value = lines[0].substring(0, 40);
-                } else {
-                    tempInput.value = "ไม่พบข้อความชัดเจน กรุณาพิมพ์ระบุเองค่ะ";
-                }
-            } catch (e) { 
-                alert("การสแกนขัดข้องชั่วคราว กรุณาพิมพ์ชื่อยาเองก่อนนะคะ"); 
-                tempInput.value = "";
-                status.classList.add('hidden');
-            }
-        }
-
-        function confirmMed() {
-            db.info.meds.push({ id: Date.now(), n: document.getElementById('tempMedName').value, r: "0" });
-            document.getElementById('ocrStatus').classList.add('hidden');
-            saveMed();
-        }
-
         function addMedManual() {
-            const n = prompt("พิมพ์ชื่อยาและขนาด:");
+            const n = prompt("พิมพ์ชื่อยาความดันและขนาดมิลลิกรัม (เช่น Amlodipine 5mg):");
             if(n) { db.info.meds.push({ id: Date.now(), n: n, r: "0" }); saveMed(); }
         }
 
@@ -273,7 +228,7 @@
                     <div class="flex-1">
                         <p class="text-xs text-teal-300 font-bold">${i+1}. ${m.n}</p>
                         <div class="flex items-center gap-2 mt-2">
-                            <span class="text-[9px] text-slate-500 font-bold">ยาคงเหลือ:</span>
+                            <span class="text-[9px] text-slate-500 font-bold">คงเหลือ:</span>
                             <input type="number" value="${m.r}" onchange="updateRem(${m.id}, this.value)" class="w-14 bg-slate-950 border border-slate-800 rounded text-center text-xs text-orange-400 font-bold outline-none">
                             <span class="text-[9px] text-slate-500">เม็ด</span>
                         </div>
@@ -288,10 +243,10 @@
 
         function setPeriod(p) {
             currentP = p;
-            document.querySelectorAll('#btnM, #btnE, #btnH').forEach(b => b.className = "flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold");
+            document.querySelectorAll('#btnM, #btnE, #btnH').forEach(b => b.className = "flex-1 py-2.5 rounded-xl text-slate-400 text-xs font-bold");
             const activeId = p === 'morning' ? 'btnM' : (p === 'evening' ? 'btnE' : 'btnH');
             const color = p === 'hospital' ? 'bg-red-600 shadow-md shadow-red-900/20' : 'bg-teal-600 shadow-md shadow-teal-900/20';
-            document.getElementById(activeId).className = `flex-1 py-2 rounded-xl ${color} text-white text-[10px] font-bold shadow-md transition-all`;
+            document.getElementById(activeId).className = `flex-1 py-2.5 rounded-xl ${color} text-white text Granger text-xs font-bold shadow-md transition-all`;
         }
 
         function addRecord() {
@@ -320,23 +275,23 @@
             if (sys >= 180 || dia >= 110) {
                 area.className = "p-4 rounded-2xl border border-red-500 bg-red-500/10 text-left space-y-2 animate-pulse";
                 status.className = "font-bold text-sm text-red-400 flex items-center gap-1";
-                status.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ระดับสีแดง: ความดันสูงขั้นวิกฤต อันตราย!";
-                advice.innerHTML = "<strong>สิ่งที่ท่านต้องทำทันที:</strong><br>• นั่งพักสงบนิ่ง 5 นาทีแล้วกดวัดซ้ำอีกครั้ง<br>• หากวัดซ้ำแล้วยังสูง หรือมีอาการ <strong>ปวดท้ายทอยรุนแรง ตาพร่ามัว เจ็บหน้าอก หรือแขนขาอ่อนแรง</strong> ให้รีบไปห้องฉุกเฉิน รพ.ตาคลี หรือโทร 1669 ทันทีค่ะ!";
+                status.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> วิกฤต สีแดง: ความดันสูงอันตรายมาก!";
+                advice.innerHTML = "• นั่งพัก 5 นาทีแล้ววัดซ้ำ<br>• หากยังมีอาการ <strong>ปวดหัวรุนแรง ตาพร่ามัว แน่นหน้าอก ปากเบี้ยว หรือแขนขาอ่อนแรง</strong> ให้ไปตึกอุบัติเหตุ รพ.ตาคลี หรือโทร 1669 ทันทีค่ะ!";
             } else if (sys >= 140 || dia >= 90) {
                 area.className = "p-4 rounded-2xl border border-orange-500 bg-orange-500/10 text-left space-y-2";
                 status.className = "font-bold text-sm text-orange-400 flex items-center gap-1";
-                status.innerHTML = "<i class='fa-solid fa-circle-exclamation'></i> ระดับสีส้ม: ความดันโลหิตสูง";
-                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• ทานยาลดความดันต่อเนื่องตามที่หมอสั่ง ห้ามหยุดยาเอง<br>• ลดอาหารเค็มจัด ของดอง ขนมขบเคี้ยว และอาหารไขมันสูง<br>• ดื่มน้ำสะอาด นอนพักผ่อนให้เพียงพอ 6-8 ชั่วโมงค่ะ";
+                status.innerHTML = "<i class='fa-solid fa-circle-exclamation'></i> สีส้ม: ความดันโลหิตสูง";
+                advice.innerHTML = "• กินยาลดความดันตามแพทย์สั่งสม่ำเสมอ ห้ามขาด<br>• หลีกเลี่ยงแกงกะทิ ของมัน ของเค็มจัด ของดอง ขนมกรุบกรอบ";
             } else if ((sys >= 120 && sys <= 139) || (dia >= 80 && dia <= 89)) {
                 area.className = "p-4 rounded-2xl border border-yellow-500 bg-yellow-500/10 text-left space-y-2";
                 status.className = "font-bold text-sm text-yellow-400 flex items-center gap-1";
-                status.innerHTML = "<i class='fa-solid fa-circle-info'></i> ระดับสีเหลือง: ความดันค่อนข้างสูง";
-                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• ร่างกายเริ่มเตือนให้ระวัง! ควรควบคุมปริมาณโซเดียมในอาหาร<br>• ออกกำลังกายเบาๆ เช่น เดินเร็ว วันละ 30 นาที<br>• ตรวจเช็คค่าความดันเป็นประจำในเวลาเช้าและเย็นเพื่อดูแนวโน้ม";
+                status.innerHTML = "<i class='fa-solid fa-circle-info'></i> สีเหลือง: ความดันเริ่มสูงขึ้น";
+                advice.innerHTML = "• เริ่มเตือนให้เฝ้าระวังตัว ลดการปรุงน้ำปลา ซอสซีอิ๊ว ในมื้ออาหาร<br>• ออกกำลังกายสม่ำเสมอ เช่น เดินเร็วต่อเนื่องอย่างน้อย 30 นาทีต่อวัน";
             } else {
                 area.className = "p-4 rounded-2xl border border-green-500 bg-green-500/10 text-left space-y-2";
                 status.className = "font-bold text-sm text-green-400 flex items-center gap-1";
-                status.innerHTML = "<i class='fa-solid fa-circle-check'></i> ระดับสีเขียว: ค่าความดันปกติ ดีเยี่ยม";
-                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• รักษาสุขภาพและพฤติกรรมที่ดีแบบนี้ไว้นะคะ<br>• ทานผักผลไม้ ออกกำลังกาย และพักผ่อนให้เพียงพออย่างต่อเนื่องค่ะ";
+                status.innerHTML = "<i class='fa-solid fa-circle-check'></i> สีเขียว: ความดันปกติ ดีเยี่ยม";
+                advice.innerHTML = "• สุขภาพอยู่ในเกณฑ์ดีเยี่ยมค่ะ รักษาวินัยการกินและการปฏิบัติตัวต่อไปนะคะ";
             }
         }
 
