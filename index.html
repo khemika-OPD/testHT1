@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Takhli HT Smart Care</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .input-profile { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; padding: 0.4rem; color: #2dd4bf; outline: none; font-size: 0.875rem; width: 100%; }
+        .input-comorbidity { background: rgba(45, 212, 191, 0.15); border: 1px solid rgba(45, 212, 191, 0.5); border-radius: 1rem; padding: 0.75rem; width: 100%; color: #2dd4bf; outline: none; }
+        .input-allergy { background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.5); border-radius: 1rem; padding: 0.75rem; width: 100%; color: #fb7185; outline: none; font-weight: bold; }
+        .btn-gradient { background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%); transition: 0.3s; }
+    </style>
+</head>
+<body class="p-4 pb-12" onload="initApp()">
+
+    <div class="max-w-md mx-auto space-y-4">
+        
+        <div class="glass-card rounded-[2rem] p-6 border-t-4 border-teal-400 text-center">
+            <h1 class="text-xl font-bold text-teal-400 tracking-tight uppercase mb-1">Takhli HT Smart Care</h1>
+            <p class="text-[11px] text-white font-medium mb-4">แอปพลิเคชันดูแลผู้ป่วยความดันโลหิตสูงอัจฉริยะ โรงพยาบาลตาคลี</p>
+            
+            <div class="flex items-center gap-4 py-4 border-y border-slate-700/50 my-4 text-left">
+                <div class="w-14 h-14 bg-teal-500/20 rounded-2xl flex items-center justify-center border border-teal-400/30">
+                    <i class="fa-solid fa-address-card text-teal-400 text-2xl"></i>
+                </div>
+                <div class="flex-1 space-y-2">
+                    <input type="text" id="patientHN" placeholder="ใส่ HN ผู้ป่วย..." class="input-profile font-bold italic" onchange="saveInfo()">
+                    <input type="text" id="patientName" placeholder="ระบุชื่อ-นามสกุล..." class="input-profile" onchange="saveInfo()">
+                </div>
+            </div>
+            
+            <div class="space-y-3 text-left">
+                <input type="text" id="comorbidity" placeholder="โรคประจำตัว (Comorbidity)..." class="input-comorbidity text-sm" onchange="saveInfo()">
+                <input type="text" id="allergyInput" placeholder="ประวัติแพ้ยา (Drug Allergy) *..." class="input-allergy text-sm" onchange="saveInfo()">
+            </div>
+        </div>
+
+        <div class="glass-card rounded-[2rem] p-6 border-l-4 border-teal-500 space-y-4">
+            <button onclick="toggleSection('medListArea', 'medToggleIcon')" class="flex justify-between items-center w-full text-sm font-bold text-teal-300 uppercase italic">
+                <span><i class="fa-solid fa-pills mr-1"></i> รายการยาปัจจุบัน</span>
+                <i id="medToggleIcon" class="fa-solid fa-chevron-down text-[10px]"></i>
+            </button>
+            <div id="medListArea" class="hidden space-y-3">
+                <div class="flex gap-2">
+                    <button onclick="addMedManual()" class="flex-1 bg-teal-500/10 text-teal-400 py-2 rounded-xl text-[10px] border border-teal-500/30 font-bold">+ เพิ่มยา</button>
+                    <button onclick="document.getElementById('cameraInput').click()" class="flex-1 btn-gradient text-white py-2 rounded-xl text-[10px] font-bold">สแกนซองยา</button>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="processImage(this)">
+                </div>
+                <div id="ocrStatus" class="hidden text-center py-4 bg-slate-800/50 rounded-2xl border border-teal-500/20">
+                    <div id="confirmZone" class="space-y-3 p-3 text-left">
+                        <p class="text-[10px] text-slate-400">ชื่อยาที่อ่านได้ (แก้ไขได้):</p>
+                        <input type="text" id="tempMedName" class="input-comorbidity text-center font-bold text-sm">
+                        <button onclick="confirmMed()" class="w-full btn-gradient py-2 rounded-xl text-xs font-bold">ยืนยันลงรายการ</button>
+                    </div>
+                </div>
+                <div id="medDisplayArea" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-[2rem] p-5 border-l-4 border-cyan-500">
+            <button onclick="toggleSection('graphSection', 'graphIcon')" class="w-full flex justify-between items-center text-teal-300 font-bold text-xs uppercase tracking-widest">
+                <span><i class="fa-solid fa-chart-area mr-2"></i> สถิติแนวโน้ม (Trend Chart)</span>
+                <i id="graphIcon" class="fa-solid fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div id="graphSection" class="hidden mt-6 space-y-4">
+                <div class="h-48 w-full"><canvas id="bpChart"></canvas></div>
+                <div class="grid grid-cols-2 gap-2 text-[9px] border-t border-slate-700/50 pt-3">
+                    <span class="flex items-center gap-2 font-bold"><i class="fa-solid fa-circle text-red-500"></i> รพ. (OBP)</span>
+                    <span class="flex items-center gap-2 font-bold"><i class="fa-solid fa-circle text-[#4ade80]"></i> บ้าน (เช้า)</span>
+                    <span class="flex items-center gap-2 font-bold"><i class="fa-solid fa-circle text-[#facc15]"></i> บ้าน (เย็น)</span>
+                    <span class="flex items-center gap-2 font-bold text-cyan-400 italic">--- เป้าหมาย 135</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-[2rem] p-6 border-l-4 border-teal-500 space-y-5">
+            <button onclick="toggleSection('bpResultSection', 'bpResultIcon')" class="w-full flex justify-between items-center text-teal-300 font-bold text-xs uppercase tracking-widest">
+                <span><i class="fa-solid fa-heart-pulse mr-2"></i> บันทึก & ผลความดันเฉลี่ย</span>
+                <i id="bpResultIcon" class="fa-solid fa-chevron-down transition-transform duration-300"></i>
+            </button>
+            <div id="bpResultSection" class="hidden space-y-5 pt-2 text-center">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-teal-500/10 shadow-inner">
+                        <p class="text-[9px] text-slate-400 uppercase font-bold">เฉลี่ยเช้า (7 วัน)</p>
+                        <p id="avgM" class="text-lg font-bold text-teal-400">--/--</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-yellow-500/10 shadow-inner">
+                        <p class="text-[9px] text-slate-400 uppercase font-bold">เฉลี่ยเย็น (7 วัน)</p>
+                        <p id="avgE" class="text-lg font-bold text-yellow-400">--/--</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 p-1 bg-slate-900/80 rounded-2xl">
+                    <button onclick="setPeriod('morning')" id="btnM" class="flex-1 py-2 rounded-xl bg-teal-600 text-white text-[10px] font-bold">เช้า</button>
+                    <button onclick="setPeriod('evening')" id="btnE" class="flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold">เย็น</button>
+                    <button onclick="setPeriod('hospital')" id="btnH" class="flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold">รพ.</button>
+                </div>
+                <div class="flex gap-3">
+                    <input type="number" id="sysIn" placeholder="ตัวบน (SYS)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-xl font-bold text-white outline-none focus:border-teal-400">
+                    <input type="number" id="diaIn" placeholder="ตัวล่าง (DIA)" class="w-1/2 bg-slate-950 border border-slate-700 rounded-2xl p-4 text-center text-xl font-bold text-white outline-none focus:border-teal-400">
+                </div>
+                
+                <div id="evalArea" class="hidden p-4 rounded-2xl border text-left space-y-2 transition-all">
+                    <div id="evalStatus" class="font-bold text-sm"></div>
+                    <div id="evalAdvice" class="text-xs leading-relaxed text-slate-200"></div>
+                </div>
+
+                <button onclick="addRecord()" class="w-full btn-gradient p-4 rounded-2xl text-sm font-bold shadow-xl tracking-widest uppercase">บันทึกข้อมูล</button>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-[2rem] p-6 border-l-4 border-amber-500 space-y-4">
+            <div class="flex justify-between items-center w-full text-xs font-bold text-amber-400 uppercase tracking-widest">
+                <span><i class="fa-solid fa-calendar-day mr-2"></i> วันนัดหมายครั้งต่อไป</span>
+                <span id="countdownLabel" class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-lg font-bold">ยังไม่มีนัด</span>
+            </div>
+            <div class="space-y-3">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-calendar-check text-sm"></i>
+                    </div>
+                    <input type="date" id="nextAppointDate" onchange="saveAppointment()" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-teal-400 outline-none focus:border-amber-500 transition">
+                </div>
+                <p class="text-[10px] text-slate-400 px-1 leading-relaxed">
+                    *กรุณาเลือกวันนัดหมายตามใบนัดของโรงพยาบาลตาคลี แอปพลิเคชันจะช่วยคำนวณวันนัดถอยหลังให้โดยอัตโนมัติค่ะ
+                </p>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-[2rem] p-6 border-l-4 border-slate-500 space-y-4">
+            <button onclick="toggleSection('historyArea', 'historyToggleIcon')" class="flex justify-between items-center w-full text-sm font-bold text-slate-400 uppercase tracking-tight">
+                <span><i class="fa-solid fa-list-check mr-1"></i> ผลความดันทั้งหมด</span>
+                <i id="historyToggleIcon" class="fa-solid fa-chevron-down text-[10px]"></i>
+            </button>
+            <div id="historyArea" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1">
+                </div>
+        </div>
+
+        <div class="text-center">
+            <button id="btn_show_qr" onclick="showQR()" class="bg-slate-800/60 border border-slate-700 text-slate-400 text-xs py-2 px-4 rounded-xl hover:bg-slate-700 transition">
+                <i class="fa-solid fa-qrcode mr-1"></i> แสดง QR Code เพื่อแชร์แอป
+            </button>
+            <div id="qr_area" class="hidden mt-3 p-4 bg-white rounded-2xl flex flex-col items-center justify-center max-w-[200px] mx-auto border border-slate-200">
+                <div id="qrcode"></div>
+                <p class="text-[10px] text-slate-500 mt-2 font-bold">สแกนเพื่อเปิดสมุดบันทึก</p>
+                <button onclick="document.getElementById('qr_area').classList.add('hidden'); document.getElementById('btn_show_qr').classList.remove('hidden');" class="text-[10px] text-red-500 font-bold underline mt-2">ปิด</button>
+            </div>
+        </div>
+
+        <div class="mt-8 mb-6 text-center px-6">
+            <div class="border-t border-slate-700/50 pt-5">
+                <p class="text-[10px] text-slate-400">Khemika-OPD-Takhli</p>
+                <p class="text-[9px] text-slate-500 italic font-light tracking-wide">Digital Healthcare Innovation © 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        let db = { hospital: [], home_m: [], home_e: [], info: { hn: "", name: "", com: "", alr: "", meds: [], app_date: "" } };
+        let currentP = 'morning';
+        let myChart;
+
+        function initApp() {
+            const saved = localStorage.getItem('HT_V21_FINAL');
+            if(saved) db = JSON.parse(saved);
+            document.getElementById('patientHN').value = db.info.hn || "";
+            document.getElementById('patientName').value = db.info.name || "";
+            document.getElementById('comorbidity').value = db.info.com || "";
+            document.getElementById('allergyInput').value = db.info.alr || "";
+            
+            if(db.info.app_date) {
+                document.getElementById('nextAppointDate').value = db.info.app_date;
+                calculateCountdown(db.info.app_date);
+            }
+            
+            renderMeds();
+            renderHistory();
+            updateUI();
+        }
+
+        function saveAppointment() {
+            const inputDate = document.getElementById('nextAppointDate').value;
+            db.info.app_date = inputDate;
+            localStorage.setItem('HT_V21_FINAL', JSON.stringify(db));
+            calculateCountdown(inputDate);
+        }
+
+        function calculateCountdown(dateString) {
+            const label = document.getElementById('countdownLabel');
+            if(!dateString) {
+                label.innerText = "ยังไม่มีนัด";
+                label.className = "text-[10px] bg-slate-500/20 text-slate-300 px-2 py-0.5 rounded-lg font-bold";
+                return;
+            }
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const appointDate = new Date(dateString);
+            appointDate.setHours(0, 0, 0, 0);
+
+            const diffTime = appointDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 0) {
+                label.innerText = `อีก ${diffDays} วันจะถึงนัด`;
+                label.className = "text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-lg font-bold";
+            } else if (diffDays === 0) {
+                label.innerText = "🚨 มีนัดวันนี้!";
+                label.className = "text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-lg font-bold animate-bounce";
+            } else {
+                label.innerText = `เลยกำหนดนัดมา ${Math.abs(diffDays)} วัน`;
+                label.className = "text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-lg font-bold";
+            }
+        }
+
+        function toggleSection(sectionId, iconId) {
+            const sec = document.getElementById(sectionId);
+            const icon = document.getElementById(iconId);
+            const isHidden = sec.classList.toggle('hidden');
+            if (icon) icon.style.transform = isHidden ? "rotate(0deg)" : "rotate(180deg)";
+            if (sectionId === 'graphSection' && !isHidden) setTimeout(renderChart, 100);
+        }
+
+        // ระบบสแกนยาเวอร์ชันอัปเกรดเพื่อความแม่นยำภาษาไทยและอังกฤษร่วมกัน
+        async function processImage(input) {
+            if (!input.files || !input.files[0]) return;
+            const status = document.getElementById('ocrStatus');
+            const tempInput = document.getElementById('tempMedName');
+            
+            status.classList.remove('hidden');
+            tempInput.value = "⏳ กำลังอ่านตัวอักษรภาษาไทยและอังกฤษ...";
+            
+            try {
+                const result = await Tesseract.recognize(input.files[0], 'tha+eng');
+                let detectedText = result.data.text;
+                let lines = detectedText.split('\n').map(line => line.trim()).filter(line => line.length > 2);
+                
+                if (lines.length > 0) {
+                    tempInput.value = lines[0].substring(0, 40);
+                } else {
+                    tempInput.value = "ไม่พบข้อความชัดเจน กรุณาพิมพ์ระบุเองค่ะ";
+                }
+            } catch (e) { 
+                alert("การสแกนขัดข้องชั่วคราว กรุณาพิมพ์ชื่อยาเองก่อนนะคะ"); 
+                tempInput.value = "";
+                status.classList.add('hidden');
+            }
+        }
+
+        function confirmMed() {
+            db.info.meds.push({ id: Date.now(), n: document.getElementById('tempMedName').value, r: "0" });
+            document.getElementById('ocrStatus').classList.add('hidden');
+            saveMed();
+        }
+
+        function addMedManual() {
+            const n = prompt("พิมพ์ชื่อยาและขนาด:");
+            if(n) { db.info.meds.push({ id: Date.now(), n: n, r: "0" }); saveMed(); }
+        }
+
+        function saveMed() { localStorage.setItem('HT_V21_FINAL', JSON.stringify(db)); renderMeds(); }
+
+        function renderMeds() {
+            const list = document.getElementById('medDisplayArea');
+            list.innerHTML = db.info.meds.map((m, i) => `
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-teal-500/10 flex justify-between items-center shadow-inner">
+                    <div class="flex-1">
+                        <p class="text-xs text-teal-300 font-bold">${i+1}. ${m.n}</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-[9px] text-slate-500 font-bold">ยาคงเหลือ:</span>
+                            <input type="number" value="${m.r}" onchange="updateRem(${m.id}, this.value)" class="w-14 bg-slate-950 border border-slate-800 rounded text-center text-xs text-orange-400 font-bold outline-none">
+                            <span class="text-[9px] text-slate-500">เม็ด</span>
+                        </div>
+                    </div>
+                    <button onclick="delMed(${m.id})" class="text-red-400/70 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function updateRem(id, val) { const m = db.info.meds.find(x => x.id === id); if(m) { m.r = val; saveMed(); } }
+        function delMed(id) { if(confirm("ลบรายการยา?")) { db.info.meds = db.info.meds.filter(x => x.id !== id); saveMed(); } }
+
+        function setPeriod(p) {
+            currentP = p;
+            document.querySelectorAll('#btnM, #btnE, #btnH').forEach(b => b.className = "flex-1 py-2 rounded-xl text-slate-400 text-[10px] font-bold");
+            const activeId = p === 'morning' ? 'btnM' : (p === 'evening' ? 'btnE' : 'btnH');
+            const color = p === 'hospital' ? 'bg-red-600 shadow-md shadow-red-900/20' : 'bg-teal-600 shadow-md shadow-teal-900/20';
+            document.getElementById(activeId).className = `flex-1 py-2 rounded-xl ${color} text-white text-[10px] font-bold shadow-md transition-all`;
+        }
+
+        function addRecord() {
+            const s = document.getElementById('sysIn').value, d = document.getElementById('diaIn').value;
+            if(s && d) {
+                const sys = parseInt(s);
+                const dia = parseInt(d);
+                const entry = { id: Date.now(), s: sys, d: dia, date: new Date().toLocaleDateString('th-TH'), t: currentP };
+                if(currentP === 'morning') db.home_m.push(entry);
+                else if(currentP === 'evening') db.home_e.push(entry);
+                else db.hospital.push(entry);
+                localStorage.setItem('HT_V21_FINAL', JSON.stringify(db));
+                
+                evaluateBP(sys, dia);
+                updateUI(); renderHistory();
+                document.getElementById('sysIn').value = ''; document.getElementById('diaIn').value = '';
+            }
+        }
+
+        function evaluateBP(sys, dia) {
+            const area = document.getElementById('evalArea');
+            const status = document.getElementById('evalStatus');
+            const advice = document.getElementById('evalAdvice');
+            area.classList.remove('hidden');
+
+            if (sys >= 180 || dia >= 110) {
+                area.className = "p-4 rounded-2xl border border-red-500 bg-red-500/10 text-left space-y-2 animate-pulse";
+                status.className = "font-bold text-sm text-red-400 flex items-center gap-1";
+                status.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> ระดับสีแดง: ความดันสูงขั้นวิกฤต อันตราย!";
+                advice.innerHTML = "<strong>สิ่งที่ท่านต้องทำทันที:</strong><br>• นั่งพักสงบนิ่ง 5 นาทีแล้วกดวัดซ้ำอีกครั้ง<br>• หากวัดซ้ำแล้วยังสูง หรือมีอาการ <strong>ปวดท้ายทอยรุนแรง ตาพร่ามัว เจ็บหน้าอก หรือแขนขาอ่อนแรง</strong> ให้รีบไปห้องฉุกเฉิน รพ.ตาคลี หรือโทร 1669 ทันทีค่ะ!";
+            } else if (sys >= 140 || dia >= 90) {
+                area.className = "p-4 rounded-2xl border border-orange-500 bg-orange-500/10 text-left space-y-2";
+                status.className = "font-bold text-sm text-orange-400 flex items-center gap-1";
+                status.innerHTML = "<i class='fa-solid fa-circle-exclamation'></i> ระดับสีส้ม: ความดันโลหิตสูง";
+                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• ทานยาลดความดันต่อเนื่องตามที่หมอสั่ง ห้ามหยุดยาเอง<br>• ลดอาหารเค็มจัด ของดอง ขนมขบเคี้ยว และอาหารไขมันสูง<br>• ดื่มน้ำสะอาด นอนพักผ่อนให้เพียงพอ 6-8 ชั่วโมงค่ะ";
+            } else if ((sys >= 120 && sys <= 139) || (dia >= 80 && dia <= 89)) {
+                area.className = "p-4 rounded-2xl border border-yellow-500 bg-yellow-500/10 text-left space-y-2";
+                status.className = "font-bold text-sm text-yellow-400 flex items-center gap-1";
+                status.innerHTML = "<i class='fa-solid fa-circle-info'></i> ระดับสีเหลือง: ความดันค่อนข้างสูง";
+                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• ร่างกายเริ่มเตือนให้ระวัง! ควรควบคุมปริมาณโซเดียมในอาหาร<br>• ออกกำลังกายเบาๆ เช่น เดินเร็ว วันละ 30 นาที<br>• ตรวจเช็คค่าความดันเป็นประจำในเวลาเช้าและเย็นเพื่อดูแนวโน้ม";
+            } else {
+                area.className = "p-4 rounded-2xl border border-green-500 bg-green-500/10 text-left space-y-2";
+                status.className = "font-bold text-sm text-green-400 flex items-center gap-1";
+                status.innerHTML = "<i class='fa-solid fa-circle-check'></i> ระดับสีเขียว: ค่าความดันปกติ ดีเยี่ยม";
+                advice.innerHTML = "<strong>คำแนะนำดูแลตัวเอง:</strong><br>• รักษาสุขภาพและพฤติกรรมที่ดีแบบนี้ไว้นะคะ<br>• ทานผักผลไม้ ออกกำลังกาย และพักผ่อนให้เพียงพออย่างต่อเนื่องค่ะ";
+            }
+        }
+
+        function renderHistory() {
+            const area = document.getElementById('historyArea');
+            const all = [...db.hospital.map(x=>({...x, lbl:'รพ.', c:'text-red-400'})), ...db.home_m.map(x=>({...x, lbl:'บ้าน(เช้า)', c:'text-green-400'})), ...db.home_e.map(x=>({...x, lbl:'บ้าน(เย็น)', c:'text-yellow-400'}))].sort((a,b)=>b.id-a.id);
+            area.innerHTML = all.map(i => `<div class="flex justify-between items-center bg-slate-900/30 p-3 rounded-2xl border border-slate-700/50 mb-1"><span class="text-[10px] font-bold ${i.c}">${i.lbl} [${i.date}]</span><b class="text-sm font-mono">${i.s}/${i.d}</b></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 py-4 italic">ยังไม่มีประวัติการบันทึก</p>';
+        }
+
+        function saveInfo() {
+            db.info.hn = document.getElementById('patientHN').value;
+            db.info.name = document.getElementById('patientName').value;
+            db.info.com = document.getElementById('comorbidity').value;
+            db.info.alr = document.getElementById('allergyInput').value;
+            localStorage.setItem('HT_V21_FINAL', JSON.stringify(db));
+        }
+
+        function updateUI() {
+            const calc = (arr) => {
+                const last7 = arr.slice(-7);
+                if(!last7.length) return "--/--";
+                return Math.round(last7.reduce((a,b)=>a+b.s,0)/last7.length) + "/" + Math.round(last7.reduce((a,b)=>a+b.d,0)/last7.length);
+            };
+            document.getElementById('avgM').innerText = calc(db.home_m);
+            document.getElementById('avgE').innerText = calc(db.home_e);
+            if(!document.getElementById('graphSection').classList.contains('hidden')) renderChart();
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('bpChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            let labels = [...new Set([...db.hospital, ...db.home_m, ...db.home_e].map(x => x.date))].sort().slice(-7);
+            if(!labels.length) labels = [new Date().toLocaleDateString('th-TH')];
+            const getV = (arr, d) => { const f = arr.filter(x => x.date === d); return f.length ? f.reduce((a,b)=>a+b.s,0)/f.length : null; };
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'เป้าหมาย', data: Array(labels.length).fill(135), borderColor: '#22d3ee', borderDash: [5, 5], pointRadius: 0, fill: false },
+                        { label: 'รพ.', data: labels.map(l => getV(db.hospital, l)), borderColor: '#ef4444', backgroundColor: '#ef4444', pointStyle: 'rectRot', radius: 7, spanGaps: true },
+                        { label: 'เช้า', data: labels.map(l => getV(db.home_m, l)), borderColor: '#4ade80', backgroundColor: '#4ade80', tension: 0.3, spanGaps: true },
+                        { label: 'เย็น', data: labels.map(l => getV(db.home_e, l)), borderColor: '#facc15', backgroundColor: '#facc15', tension: 0.3, spanGaps: true }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 90, max: 190, ticks: { size: 10, color: '#94a3b8' } }, x: { ticks: { size: 10, color: '#94a3b8' } } } }
+            });
+        }
+
+        function showQR() {
+            const area = document.getElementById('qr_area');
+            area.classList.remove('hidden');
+            document.getElementById('btn_show_qr').classList.add('hidden');
+            if (!document.getElementById("qrcode").innerHTML) {
+                new QRCode(document.getElementById("qrcode"), {
+                    text: window.location.href,
+                    width: 140,
+                    height: 140
+                });
+            }
+        }
+    </script>
+</body>
+</html>
